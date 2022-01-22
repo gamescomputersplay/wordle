@@ -242,49 +242,68 @@ def play_one_game(params, quiet=True):
 
     game = Wordle()
     player = Player(params)
-    for _ in range(MAX_TURNS):
+    done = False
+    while not done:
         players_guess = player.make_guess()
         if game.guess(players_guess):
-            break
+            done = True
         player.update_mask(game.guesses[-1])
     if not quiet:
         print (game)
     if game.guesses[-1].guessed_correctly:
-        return len(game.guesses)
-    return -1
+        return game.guesses
+    return -1 # This shouldn't happen
 
 
 def parse_results(results):
     ''' Get couple of main statistics from the list of results
     '''
     frequencies = {}
+    lengths = []
     complete = 0
     turns_sum = 0
     for result in results:
-        if result in frequencies:
-            frequencies[result] += 1
+        length = len(result)
+        lengths.append(length)
+        if length in frequencies:
+            frequencies[length] += 1
         else:
-            frequencies[result] = 1
-        if result > 0:
+            frequencies[length] = 1
+        turns_sum += length
+        if length <= MAX_TURNS:
             complete += 1
-            turns_sum += result
 
     print (f"Winrate: {complete*100/len(results):.1f}%")
-    if complete > 0:
-        print (f"Average length: {turns_sum/complete:.1f}")
 
+    if complete > 0:
+        print (f"Average length: {turns_sum/len(results):.1f}")
+    
+    print (f"Median length: {sorted(lengths)[len(results) // 2]}")
+
+
+def write_log(results):
+    with open("wordle_log.txt", "w", encoding="utf-8") as fs:
+        for result in results:
+            for i, guess in enumerate(result):
+                fs.write (guess.word)
+                if i != len(result) - 1:
+                    fs.write(" ")
+                else:
+                    fs.write("\n")
+                
+    
 
 def simulation(params, number_of_runs):
     ''' play the game number_of_runs times
     return the list with all results
     '''
-    print (f"Parameters: {params}, Turns: {MAX_TURNS}, Runs: {number_of_runs}")
+    print (f"Parameters: {params}, Runs: {number_of_runs}")
     simulation_results = []
     for _ in range(number_of_runs):
         simulation_results.append(play_one_game(params))
 
     parse_results(simulation_results)
-
+    write_log(simulation_results)
 
 def main():
     ''' launch the simulation
@@ -301,17 +320,16 @@ def main():
 
     #play_one_game(params, quiet=False)
 
-    simulation(params, 100)
-
-    #play_one_game(params, quiet=False)
-
+    simulation(params, 1000)
 
     print (f"Time: {time.time()-start_time}")
 
 # Global Vars
+# Word lists to use:
 puzzle_words = WordList("words-guess.txt")
 guessing_words = WordList("words-guess.txt", "words-all.txt")
 
+# Game length (the game will go on, but it will affect the % of wins)
 MAX_TURNS = 6
 
 if __name__ == "__main__":
