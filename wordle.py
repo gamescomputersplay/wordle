@@ -56,7 +56,7 @@ class WordList:
         '''
         self.letter_count = {c:0 for c in "abcdefghijklmnopqrstuvwxyz"}
         for word in self.word_list:
-            for letter in word:
+            for letter in set(word):
                 self.letter_count[letter] += 1
 
     def gen_word_scores(self):
@@ -282,7 +282,8 @@ def parse_results(results):
 
 
 def write_log(results):
-    with open("wordle_log.txt", "w", encoding="utf-8") as fs:
+    filename = f"wordle_log_{int(time.time())}.txt"
+    with open(filename, "w", encoding="utf-8") as fs:
         for result in results:
             for i, guess in enumerate(result):
                 fs.write (guess.word)
@@ -320,7 +321,7 @@ def main():
 
     #play_one_game(params, quiet=False)
 
-    simulation(params, 1000)
+    simulation(params, 10)
 
     print (f"Time: {time.time()-start_time}")
 
