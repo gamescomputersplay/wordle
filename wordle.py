@@ -22,10 +22,10 @@ class WordList:
         # words' scores: {"apple": 100, "fruit": 200} etc
         # score is the sum of all letters' frequences
         self.word_scores = {}
-        
+
         # Gererate the scores
         self.gen_word_scores()
-        
+
     def copy(self):
         ''' Copy of existing wordlist
         '''
@@ -234,6 +234,11 @@ class Player:
         if "yellow" in self.params:
             self.update_mask_yellow(guess)
 
+    def remove_word(self, word):
+        ''' Remove a word from possible guesses
+        used to remove used words
+        '''
+        self.remaining_words.word_list.remove(word)
 
 def play_one_game(params, quiet=True):
     ''' Playing one round of Wordle using player strategy
@@ -247,6 +252,7 @@ def play_one_game(params, quiet=True):
         players_guess = player.make_guess()
         if game.guess(players_guess):
             done = True
+        player.remove_word(players_guess)
         player.update_mask(game.guesses[-1])
     if not quiet:
         print (game)
@@ -277,22 +283,25 @@ def parse_results(results):
 
     if complete > 0:
         print (f"Average length: {turns_sum/len(results):.1f}")
-    
+
     print (f"Median length: {sorted(lengths)[len(results) // 2]}")
 
 
 def write_log(results):
+    ''' Write the results of the simulation in the txt file
+    format is "guess1 guess2 guess3"
+    final guess is also the secret word
+    '''
     filename = f"wordle_log_{int(time.time())}.txt"
-    with open(filename, "w", encoding="utf-8") as fs:
+    with open(filename, "w", encoding="utf-8") as log_file:
         for result in results:
             for i, guess in enumerate(result):
-                fs.write (guess.word)
+                log_file.write (guess.word)
                 if i != len(result) - 1:
-                    fs.write(" ")
+                    log_file.write(" ")
                 else:
-                    fs.write("\n")
-                
-    
+                    log_file.write("\n")
+
 
 def simulation(params, number_of_runs):
     ''' play the game number_of_runs times
@@ -321,7 +330,7 @@ def main():
 
     #play_one_game(params, quiet=False)
 
-    simulation(params, 10)
+    simulation(params, 1000)
 
     print (f"Time: {time.time()-start_time}")
 
