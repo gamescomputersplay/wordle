@@ -34,6 +34,11 @@ class WordList:
         new_word_list.word_scores = self.word_scores.copy()
         return new_word_list
 
+    def __len__(self):
+        ''' Return count of remaining words: len(word_list)
+        '''
+        return len(self.word_list)
+
     def get_random_word(self):
         ''' Return random word from the word list
         '''
@@ -185,11 +190,19 @@ class Player:
         ''' Pick the word from the list
         '''
         self.filter_word_list()
-        if "scored" in self.params:
-            if "recount" in  self.params:
-                self.remaining_words.gen_word_scores()
-            return self.remaining_words.get_hiscore_word()
-        return self.remaining_words.get_random_word()
+        # Use random word if:
+        # 1. "scored" is no set
+        # 2. "firstrandom" is set and this is the first guess
+        # (word list has not been filtered yet)
+        if "scored" not in self.params or \
+           "firstrandom" in self.params and \
+           len(self.remaining_words) == len(guessing_words):
+            return self.remaining_words.get_random_word()
+
+        if "recount" in  self.params:
+            self.remaining_words.gen_word_scores()
+        return self.remaining_words.get_hiscore_word()
+    
 
     def update_mask_green(self, guess):
         ''' Use Green result: delete all other letters in this mask
@@ -319,28 +332,34 @@ def main():
     ''' launch the simulation
     '''
     start_time = time.time()
-
-    # Parameters of the player:
-    # green: uses green letters info
-    # grey: uses grey letters info
-    # yellow: uses yellow letters info
-    # scored: weight words by the frequency of the words
-    # recount: recalculate weights for every guess
-    params = ["green", "yellow", "grey", "scored", "recount"]
-
-    #play_one_game(params, quiet=False)
-
-    simulation(params, 1000)
+    
+    if N_GAMES == 1:
+        play_one_game(params, quiet=False)
+    else:
+        simulation(params, N_GAMES)
 
     print (f"Time: {time.time()-start_time}")
 
-# Global Vars
+
 # Word lists to use:
 puzzle_words = WordList("words-guess.txt")
 guessing_words = WordList("words-guess.txt", "words-all.txt")
 
 # Game length (the game will go on, but it will affect the % of wins)
 MAX_TURNS = 6
+
+# Player's settings:
+# green: uses green letters info
+# grey: uses grey letters info
+# yellow: uses yellow letters info
+# scored: weight words by the frequency of the words
+# recount: recalculate weights for every guess
+# firstrandom: random first guess (worse results but more interesting to watch)
+params = ["green", "yellow", "grey", "scored", "recount", "firstrandom"]
+
+# Number of games to simulate
+# if == 1, shows how the game went
+N_GAMES = 1000
 
 if __name__ == "__main__":
     main()
