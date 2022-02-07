@@ -6,6 +6,7 @@ import time
 
 class WordList:
     ''' Class to load the list of words from file
+    Initialized with the file(s) to load words from
     '''
 
     def __init__(self, *files):
@@ -23,8 +24,14 @@ class WordList:
         # score is the sum of all letters' frequences
         self.word_scores = {}
 
-        # Gererate the scores
+        # Same, but scores accont for letter positions
+        self.position_letter_count = [{}, {}, {}, {}, {}]
+        self.position_word_scores = {}
+
+        # Gererate the word scores
+        # (both positional and total)
         self.gen_word_scores()
+        self.gen_positional_word_scores()
 
     def copy(self):
         ''' Copy of existing wordlist
@@ -32,6 +39,7 @@ class WordList:
         new_word_list = WordList()
         new_word_list.word_list = self.word_list.copy()
         new_word_list.word_scores = self.word_scores.copy()
+        new_word_list.position_word_scores = self.position_word_scores.copy()
         return new_word_list
 
     def __len__(self):
@@ -44,25 +52,35 @@ class WordList:
         '''
         return random.choice(self.word_list)
 
-    def get_hiscore_word(self):
+    def get_hiscore_word(self, use_position=False):
         ''' return the word with the highest score
+        use_position: whether or not use position-based scores
         '''
+        scores = self.position_word_scores if use_position else self.word_scores
         best_word = ""
         best_score = 0
         for word in self.word_list:
-            if self.word_scores[word] > best_score:
-                best_score = self.word_scores[word]
+            if scores[word] > best_score:
+                best_score = scores[word]
                 best_word = word
         return best_word
 
     def gen_letter_count(self):
         ''' calculate counts of all letters in the word_list
-        return dict with such counts
         '''
         self.letter_count = {c:0 for c in "abcdefghijklmnopqrstuvwxyz"}
         for word in self.word_list:
             for letter in set(word):
                 self.letter_count[letter] += 1
+
+    def gen_positional_letter_count(self):
+        ''' calculate letter count for each letter position
+        '''
+        for i in range(5):
+            self.position_letter_count[i] = {c:0 for c in "abcdefghijklmnopqrstuvwxyz"}
+        for word in self.word_list:
+            for i, letter in enumerate(word):
+                self.position_letter_count[i][letter] += 1
 
     def gen_word_scores(self):
         ''' Calculate scores for each word
@@ -74,6 +92,23 @@ class WordList:
             for letter in set(list(word)):
                 word_score += self.letter_count[letter]
             self.word_scores[word] = word_score
+
+    def gen_positional_word_scores(self):
+        ''' Calculate positional scores for each word
+        '''
+        self.gen_positional_letter_count()
+        self.position_word_scores = {}
+        for word in self.word_list:
+            # Sum up scores, but if the letter is twice in the word
+            # use the highest score only
+            word_score = {}
+            for i, letter in enumerate(word):
+                if letter not in word_score:
+                    word_score[letter] = self.position_letter_count[i][letter]
+                else:
+                    word_score[letter] = max(word_score[letter],
+                                             self.position_letter_count[i][letter])
+            self.position_word_scores[word] = sum(word_score.values())
 
 
 class Guess:
@@ -127,9 +162,13 @@ class Wordle:
     keeping track of guessed letters
     '''
 
-    def __init__(self):
+    def __init__(self, correct_word=None):
         # the word to guess
-        self.correct_word = puzzle_words.get_random_word()
+        if correct_word in puzzle_words.word_list:
+            self.correct_word = correct_word
+        else:
+            self.correct_word = puzzle_words.get_random_word()
+
         # list of guesses so far
         self.guesses = []
 
@@ -154,8 +193,7 @@ class Player:
         Guesses a random word from the whole list
     '''
 
-    def __init__(self, params):
-        self.params = params
+    def __init__(self):
         # five lists: which letters ae allowed in each spot
         self.mask = [list('abcdefghijklmnopqrstuvwxyz') for _ in range(5)]
         # which letter has to be in the word (in non-specified places)
@@ -185,7 +223,6 @@ class Player:
         new_words.word_scores = self.remaining_words.word_scores.copy()
         self.remaining_words = new_words
 
-
     def make_guess(self):
         ''' Pick the word from the list
         '''
@@ -194,15 +231,20 @@ class Player:
         # 1. "scored" is no set
         # 2. "firstrandom" is set and this is the first guess
         # (word list has not been filtered yet)
-        if "scored" not in self.params or \
-           "firstrandom" in self.params and \
+        if "scored" not in params or \
+           "firstrandom" in params and \
            len(self.remaining_words) == len(guessing_words):
             return self.remaining_words.get_random_word()
 
-        if "recount" in  self.params:
+        # recount / don't recount all scores
+        if "recount" in  params:
             self.remaining_words.gen_word_scores()
-        return self.remaining_words.get_hiscore_word()
-    
+            self.remaining_words.gen_positional_word_scores()
+
+        # use / don't use position letter weights
+        if "position" in  params:
+            return self.remaining_words.get_hiscore_word(use_position=True)
+        return self.remaining_words.get_hiscore_word(use_position=False)
 
     def update_mask_green(self, guess):
         ''' Use Green result: delete all other letters in this mask
@@ -240,11 +282,11 @@ class Player:
         ''' Combine mask updating functions
         according to parameters
         '''
-        if "green" in self.params:
+        if "green" in params:
             self.update_mask_green(guess)
-        if "grey" in self.params:
+        if "grey" in params:
             self.update_mask_grey(guess)
-        if "yellow" in self.params:
+        if "yellow" in params:
             self.update_mask_yellow(guess)
 
     def remove_word(self, word):
@@ -253,13 +295,12 @@ class Player:
         '''
         self.remaining_words.word_list.remove(word)
 
-def play_one_game(params, quiet=True):
+def play_one_game(quiet=True, correct_word=None):
     ''' Playing one round of Wordle using player strategy
     from PlayerType
     '''
-
-    game = Wordle()
-    player = Player(params)
+    game = Wordle(correct_word)
+    player = Player()
     done = False
     while not done:
         players_guess = player.make_guess()
@@ -316,14 +357,20 @@ def write_log(results):
                     log_file.write("\n")
 
 
-def simulation(params, number_of_runs):
+def simulation(number_of_runs):
     ''' play the game number_of_runs times
     return the list with all results
     '''
     print (f"Parameters: {params}, Runs: {number_of_runs}")
     simulation_results = []
+    words_to_solve = puzzle_words.word_list.copy()
+    #random.shuffle(words_to_solve)
     for _ in range(number_of_runs):
-        simulation_results.append(play_one_game(params))
+        if number_of_runs == 2315:
+            word = words_to_solve.pop()
+            simulation_results.append(play_one_game(correct_word=word))
+        else:
+            simulation_results.append(play_one_game())
 
     parse_results(simulation_results)
     write_log(simulation_results)
@@ -332,17 +379,19 @@ def main():
     ''' launch the simulation
     '''
     start_time = time.time()
-    
+
     if N_GAMES == 1:
-        play_one_game(params, quiet=False)
+        play_one_game(quiet=False)
     else:
-        simulation(params, N_GAMES)
+        simulation(N_GAMES)
 
     print (f"Time: {time.time()-start_time}")
 
 
 # Word lists to use:
+# List that wordle game uses as a target word
 puzzle_words = WordList("words-guess.txt")
+# List that the "player" program uses
 guessing_words = WordList("words-guess.txt", "words-all.txt")
 
 # Game length (the game will go on, but it will affect the % of wins)
@@ -353,13 +402,17 @@ MAX_TURNS = 6
 # grey: uses grey letters info
 # yellow: uses yellow letters info
 # scored: weight words by the frequency of the words
-# recount: recalculate weights for every guess
-# firstrandom: random first guess (worse results but more interesting to watch)
-params = ["green", "yellow", "grey", "scored", "recount", "firstrandom"]
+#   recount: recalculate weights for every guess
+#   firstrandom: random first guess (worse results but more interesting to watch)
+#   position: use positional letter weights
+params = ["green", "yellow", "grey", "scored", "recount",
+          "firstrandom_off", "position"]
 
 # Number of games to simulate
-# if == 1, shows how the game went
-N_GAMES = 1000
+# if == 1, plays one random game, shows how the game went
+# if == 2315, runs simulation for all Wordle words (for deterministic methods)
+# other numbers - play N_GAMES games with random words from puzzle_words
+N_GAMES = 2315
 
 if __name__ == "__main__":
     main()
