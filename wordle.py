@@ -237,6 +237,12 @@ class Player:
     def reuse_green(self):
         ''' Try to re-use "green" space by putting some remaining letters there
         '''
+        def has_vowels(letters):
+            for letter in letters:
+                if letter in ["a", "o", "e", "i", "u"]:
+                    return True
+            return False
+
         # 1. Find Green masks
         # 2. Combine masks from non-green letters
         mask_lens = [len(self.mask[i]) for i in range(5)]
@@ -248,6 +254,10 @@ class Player:
             else:
                 combined_mask = set.union(combined_mask, self.mask[i])
 
+        if not has_vowels(combined_mask):
+            #print ("no vowels")
+            combined_mask = set.union(combined_mask, set(["a", "e"]))
+
         # Create temporary masks to filter original word list
         # Antimask to prevent from accidentally using green letters again
         temp_mask = self.mask.copy()
@@ -258,10 +268,12 @@ class Player:
                 temp_mask[i] = combined_mask
 
         # find the word to fit temporary mask
+        #print(self.mask)
         temp_words = guessing_words.copy()
         temp_words.filter_by_mask(temp_mask, temp_antimask, set())
         if len(temp_words) > 0:
             return temp_words.get_hiscore_word(use_position=False)
+        #print ("- green no")
 
         return ""
 
@@ -281,7 +293,7 @@ class Player:
         mask_lens = [len(self.mask[i]) for i in range(5)]
         # Conditions for "re-use green" logic:
         # has Green; more than 2 potential answers
-        if "easymode" in params and min(mask_lens) == 1 \
+        if "easymode" in params and mask_lens.count(1) > 0 \
            and len(self.remaining_words) > 2:
             # if reusing green is successful, return that word
             reuse_green_word = self.reuse_green()
@@ -369,7 +381,7 @@ def play_one_game(quiet=True, correct_word=None):
 
         # Make a guess
         players_guess = player.make_guess()
-
+        #print (players_guess)
         # Play the guess, see if we are done
         if game.guess(players_guess):
             done = True
