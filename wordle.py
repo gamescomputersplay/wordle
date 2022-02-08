@@ -53,7 +53,7 @@ class WordList:
         return random.choice(self.word_list)
 
     def get_hiscore_word(self, use_position=False):
-        ''' return the word with the highest score
+        ''' Return the word with the highest score
         use_position: whether or not use position-based scores
         '''
         scores = self.position_word_scores if use_position else self.word_scores
@@ -65,8 +65,23 @@ class WordList:
                 best_word = word
         return best_word
 
+    def get_maximized_word(self, letters):
+        ''' Return the word with maximized number of "letters"
+        '''
+        best_word = ""
+        best_score = 0
+        for word in self.word_list:
+            this_score = 0
+            for letter in letters:
+                if letter in word:
+                    this_score += 1
+            if this_score > best_score:
+                best_score = this_score
+                best_word = word
+        return best_word
+
     def gen_letter_count(self):
-        ''' calculate counts of all letters in the word_list
+        ''' Calculate counts of all letters in the word_list
         '''
         self.letter_count = {c:0 for c in "abcdefghijklmnopqrstuvwxyz"}
         for word in self.word_list:
@@ -237,11 +252,6 @@ class Player:
     def reuse_green(self):
         ''' Try to re-use "green" space by putting some remaining letters there
         '''
-        def has_vowels(letters):
-            for letter in letters:
-                if letter in ["a", "o", "e", "i", "u"]:
-                    return True
-            return False
 
         # 1. Find Green masks
         # 2. Combine masks from non-green letters
@@ -254,9 +264,9 @@ class Player:
             else:
                 combined_mask = set.union(combined_mask, self.mask[i])
 
-        if not has_vowels(combined_mask):
-            #print ("no vowels")
-            combined_mask = set.union(combined_mask, set(["a", "e"]))
+        # Add some vowels for better chance of finding a good word
+        original_mask = combined_mask.copy()
+        combined_mask = set.union(combined_mask, set(["a", "e", "i", "o"]))
 
         # Create temporary masks to filter original word list
         # Antimask to prevent from accidentally using green letters again
@@ -267,13 +277,11 @@ class Player:
                 temp_antimask[i] = temp_mask[i]
                 temp_mask[i] = combined_mask
 
-        # find the word to fit temporary mask
-        #print(self.mask)
+        # Find the word to fit temporary mask
         temp_words = guessing_words.copy()
         temp_words.filter_by_mask(temp_mask, temp_antimask, set())
         if len(temp_words) > 0:
-            return temp_words.get_hiscore_word(use_position=False)
-        #print ("- green no")
+            return temp_words.get_maximized_word(original_mask)
 
         return ""
 
@@ -381,7 +389,7 @@ def play_one_game(quiet=True, correct_word=None):
 
         # Make a guess
         players_guess = player.make_guess()
-        #print (players_guess)
+
         # Play the guess, see if we are done
         if game.guess(players_guess):
             done = True
