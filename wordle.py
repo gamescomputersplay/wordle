@@ -510,33 +510,32 @@ def main():
 
     print (f"Time: {time.time()-start_time}")
 
-
-# Word lists to use:
-# List that wordle game uses as a target word
-puzzle_words = WordList("words-guess.txt")
-# List that the "player" program uses
-guessing_words = WordList("words-guess.txt", "words-all.txt")
-
-# Game length (the game will go on, but it will affect the % of wins)
-MAX_TURNS = 6
-
-# Player's settings:
-# With everything off uses the naive greedy method (limit the potential
-# answers and randomly chose a word from the remaining list)
-# "scored": weight words by the frequency of the words
-#   "recount": recalculate weights for every guess
-#   "firstrandom": random first guess
-#       (worse results but more interesting to watch)
-#   "position": use positional letter weights
-# "easymode": don't have to use current result (reuse green space)
-params = ["scored", "recount", "firstrandom_off", "position", "easymode"]
-
-# Number of games to simulate
-# if == 1, plays one random game, shows how the game went
-# if == 2315, runs simulation for all Wordle words (for deterministic methods)
-# other numbers - play N_GAMES games with random words from puzzle_words
-N_GAMES = 2315
-
-
 if __name__ == "__main__":
+
+    # Word lists to use:
+    # List that wordle game uses as a target word
+    puzzle_words = WordList("words-guess.txt")
+    # List that the "player" program uses
+    guessing_words = WordList("words-guess.txt", "words-all.txt")
+
+    # Game length (the game will go on, but it will affect the % of wins)
+    MAX_TURNS = 6
+
+    # Player's settings:
+    # With everything off uses the naive greedy method (limit the potential
+    # answers and randomly chose a word from the remaining list)
+    # "scored": weight words by the frequency of the words
+    #   "recount": recalculate weights for every guess
+    #   "firstrandom": random first guess
+    #       (worse results but more interesting to watch)
+    #   "position": use positional letter weights
+    # "easymode": don't have to use current result (reuse green space)
+    params = ["scored", "recount", "firstrandom_off", "position", "easymode"]
+
+    # Number of games to simulate
+    # if == 1, plays one random game, shows how the game went
+    # if == 2315, runs simulation for all Wordle words (for deterministic methods)
+    # other numbers - play N_GAMES games with random words from puzzle_words
+    N_GAMES = 2315
+
     main()
