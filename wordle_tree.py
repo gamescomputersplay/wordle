@@ -85,7 +85,7 @@ def get_top_guesses(word_ns, ignore_ns):
     # Number of bests to check.
     # Minimum parameters for best result are: 3,5,10,20
     if len(word_ns) > 300:
-        options = 1
+        options = 3
     elif len(word_ns) >= 10:
         options = 10
     else:
