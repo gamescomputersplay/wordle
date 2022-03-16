@@ -11,7 +11,7 @@ import numpy as np
 import wordle
 import math
 
-def generate_the_matrix():
+def generate_the_matrix(puzzle_words, guessing_words):
     ''' Generate the main matrix of answers: all guessing words X
     puzzle words: an answer number in the cell.
     '''
@@ -22,7 +22,7 @@ def generate_the_matrix():
             matrix[i][j] = possible_answers[tuple(guess.result)]
     return matrix
 
-def get_the_matrix():
+def get_the_matrix(puzzle_words, guessing_words):
     ''' Load the matrix if saved version exists.
     If not, generate, save, return
     '''
@@ -30,7 +30,7 @@ def get_the_matrix():
         matrix = np.load("wordle_big_file.npy")
     else:
         print("Generating the cross-check file (takes a couple of minutes)")
-        matrix = generate_the_matrix()
+        matrix = generate_the_matrix(puzzle_words, guessing_words)
         np.save("wordle_big_file.npy", matrix)
     return matrix
 
@@ -200,8 +200,10 @@ if __name__ == "__main__":
 
     puzzle_words = wordle.WordList("words-guess.txt")
     guessing_words = wordle.WordList("words-guess.txt", "words-all.txt")
+
+
     possible_answers = generate_all_possible_answers()
-    matrix = get_the_matrix()
+    matrix = get_the_matrix(puzzle_words, guessing_words)
     guess_words_ns = [n for n in range(len(guessing_words))]
     
     STRATEGY = len
