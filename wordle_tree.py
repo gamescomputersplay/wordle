@@ -44,7 +44,7 @@ def generate_all_possible_answers():
         out[a_mask] = i
     return out
 
-def get_distribution(word_ns, guess_word_n):
+def get_distribution(word_ns, guess_word_n, matrix):
     ''' get list of sizes of resulting wordlist, after splitting
     word_list by guess guess_word
     '''
@@ -74,7 +74,7 @@ def get_top_guesses(word_ns, ignore_ns):
     # First, can the list be broken by one if the words in it?
     if len(word_ns)<500:
         for guess_word in word_ns:
-            distribution = get_distribution(word_ns, guess_word)
+            distribution = get_distribution(word_ns, guess_word, matrix)
             if distribution.count(1) == len(distribution):
                 return [guess_word]
 
@@ -96,7 +96,7 @@ def get_top_guesses(word_ns, ignore_ns):
     for guess_n in guess_words_ns:
         if guess_n in ignore_ns:
             continue
-        distribution = get_distribution(word_ns, guess_n)
+        distribution = get_distribution(word_ns, guess_n, matrix)
         score = score_distribution(distribution)
         
         # Find the best one
