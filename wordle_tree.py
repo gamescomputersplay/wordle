@@ -16,22 +16,23 @@ def generate_the_matrix(puzzle_words, guessing_words):
     puzzle words: an answer number in the cell.
     '''
     matrix = np.zeros((len(puzzle_words), len(guessing_words)), dtype=np.uint8)
+    possible_answers = generate_all_possible_answers()
     for i, correct_word in enumerate(puzzle_words.word_list):
         for j, guess_word in enumerate(guessing_words.word_list):
             guess = wordle.Guess(guess_word, correct_word)
             matrix[i][j] = possible_answers[tuple(guess.result)]
     return matrix
 
-def get_the_matrix(puzzle_words, guessing_words):
+def get_the_matrix(filename, puzzle_words, guessing_words):
     ''' Load the matrix if saved version exists.
-    If not, generate, save, return
+    If not, generate, save, return. Use filename.
     '''
-    if os.path.exists("wordle_big_file.npy"):
-        matrix = np.load("wordle_big_file.npy")
+    if os.path.exists(filename):
+        matrix = np.load(filename)
     else:
         print("Generating the cross-check file (takes a couple of minutes)")
         matrix = generate_the_matrix(puzzle_words, guessing_words)
-        np.save("wordle_big_file.npy", matrix)
+        np.save(filename, matrix)
     return matrix
 
 def generate_all_possible_answers():
@@ -203,7 +204,8 @@ if __name__ == "__main__":
 
 
     possible_answers = generate_all_possible_answers()
-    matrix = get_the_matrix(puzzle_words, guessing_words)
+    filename = "wordle_big_file.npy"
+    matrix = get_the_matrix(filename, puzzle_words, guessing_words)
     guess_words_ns = [n for n in range(len(guessing_words))]
     
     STRATEGY = len
