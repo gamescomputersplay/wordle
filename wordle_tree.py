@@ -69,7 +69,7 @@ def ave_entropy(distribution):
     ent = - sum([math.log2(n/p) for n in distribution])
     return ent / len(distribution)
 
-def get_top_guesses(word_ns, ignore_ns):
+def get_top_guesses(word_ns, ignore_ns, guess_words_ns, matrix):
     ''' Return top "tops" distributions with highest scores
     '''
     # First, can the list be broken by one if the words in it?
@@ -134,13 +134,13 @@ def result_length(result):
         count += len(line)
     return count
 
-def add_node(word_ns, previous_guesses):
+def add_node(word_ns, guess_words_ns, matrix, previous_guesses):
     ''' main recursive function
     '''
 
     final_result = None
     print (f"Starting new node for the list of {len(word_ns)}")
-    best_guesses = get_top_guesses(word_ns, previous_guesses)
+    best_guesses = get_top_guesses(word_ns, previous_guesses, guess_words_ns, matrix)
     print (f"Best  are: {best_guesses}")
     for i, best_guess in enumerate(best_guesses):
         
@@ -159,7 +159,8 @@ def add_node(word_ns, previous_guesses):
             else:
                 #print (f"After asnswer {answer} still a list of " + 
                 #      f"{len(new_list)}")
-                out += add_node(new_list, tuple(list(previous_guesses) + [best_guess]))
+                out += add_node(new_list, guess_words_ns, matrix,
+                                tuple(list(previous_guesses) + [best_guess]))
                 
         if final_result is None or result_length(out) < result_length(final_result):
             final_result = out
@@ -186,10 +187,18 @@ def result_to_text(result):
 def main():
     '''
     '''
+
+    puzzle_words = wordle.WordList("words-guess.txt")
+    guessing_words = wordle.WordList("words-guess.txt", "words-all.txt")
+    possible_answers = generate_all_possible_answers()
+    filename = "wordle_big_file.npy"
+    matrix = get_the_matrix(filename, puzzle_words, guessing_words, possible_answers)
+    guess_words_ns = [n for n in range(len(guessing_words))]
     word_ns = [n for n in range(len(puzzle_words))]
+    
     prev = ()
 
-    result = add_node(word_ns, prev)
+    result = add_node(word_ns, guess_words_ns, matrix, prev)
     print (result[:10])
     with open("results.txt", "w") as fs:
         fs.write(result_to_text(result))
@@ -199,14 +208,6 @@ if __name__ == "__main__":
 
     t = time.time()
 
-    puzzle_words = wordle.WordList("words-guess.txt")
-    guessing_words = wordle.WordList("words-guess.txt", "words-all.txt")
-
-
-    possible_answers = generate_all_possible_answers()
-    filename = "wordle_big_file.npy"
-    matrix = get_the_matrix(filename, puzzle_words, guessing_words, possible_answers)
-    guess_words_ns = [n for n in range(len(guessing_words))]
     
     STRATEGY = len
     #STRATEGY = ave_entropy
