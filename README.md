@@ -34,6 +34,7 @@ Strategies would get winning rate from 89% (naive) to 99.6% (“easymode” a.k.
 This is a different approach to solving this problem. We try to find the most efficient way to break down the answers space by guesses. We do it by building a tree, where nodes are guesses and branches – remaining possible answers.
 
 We choose X best candidates for each node and after calculating the branch, keep the most one resulting in fewer guesses.
-The best result is achieved with varying branching factors (from 3 for the root, then 5, 10, 20 for smaller and smaller branches, see lines 87-94).
+The best result is achieved with varying branching factors (see lines 87-94).
+"Salet" is the third option in the root node, there is on option to override and set it oon the beginning for max fast generation. In this case program runs under an hour on a fast PC.
 
 Result for this one is a 100% winning rate. Best average game length is 3.421 (same as 3b1b got in his video)
