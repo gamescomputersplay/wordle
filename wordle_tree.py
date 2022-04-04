@@ -16,7 +16,6 @@ def generate_the_matrix(puzzle_words, guessing_words, possible_answers):
     puzzle words: an answer number in the cell.
     '''
     matrix = np.zeros((len(puzzle_words), len(guessing_words)), dtype=np.uint8)
-    possible_answers = generate_all_possible_answers()
     for i, correct_word in enumerate(puzzle_words.word_list):
         for j, guess_word in enumerate(guessing_words.word_list):
             guess = wordle.Guess(guess_word, correct_word)
