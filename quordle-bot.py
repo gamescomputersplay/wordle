@@ -298,7 +298,7 @@ def main():
     puzzle_words = wordle.WordList("quordle-guess.txt")
     possible_answers = wordle_tree.generate_all_possible_answers()
     
-    matrix = wordle_tree.get_the_matrix("quordle_small.npy",
+    matrix = wordle_tree.get_the_matrix(
                             puzzle_words, puzzle_words, possible_answers)
     
     im = pyautogui.screenshot()
