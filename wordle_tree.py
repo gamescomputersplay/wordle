@@ -59,14 +59,10 @@ def get_distribution(word_ns, guess_word_n, matrix):
     return non_zero_sizes
 
 def score_distribution(distribution):
-    ''' return a score of distribution
+    ''' Return a score of distribution
+    Update this one to test other strategies
     '''
-    return STRATEGY(distribution)
-
-def ave_entropy(distribution):
-    p = len(distribution)
-    ent = - sum([math.log2(n/p) for n in distribution])
-    return ent / len(distribution)
+    return len(distribution)
 
 def get_top_guesses(word_ns, ignore_ns, guess_words_ns, matrix):
     ''' Return top "tops" distributions with highest scores
@@ -111,7 +107,7 @@ def get_top_guesses(word_ns, ignore_ns, guess_words_ns, matrix):
 
     return best_n
 
-def get_valid_results(word_ns, guess_word_n):
+def get_valid_results(word_ns, guess_word_n, matrix):
     ''' Return list of (answer, resulting_list) that are valid for this
     initial list and guess
     '''
@@ -145,7 +141,7 @@ def add_node(word_ns, guess_words_ns, matrix, previous_guesses):
         
         out = []
         #print (f"Attempt {i}. Best word is: {best_guess}")
-        answers = get_valid_results(word_ns, best_guess)
+        answers = get_valid_results(word_ns, best_guess, matrix)
 
         for answer, new_list in answers.items():
             if len(new_list) == 1 or answer == 242:
@@ -206,10 +202,5 @@ def main():
 if __name__ == "__main__":
 
     t = time.time()
-
-    
-    STRATEGY = len
-    #STRATEGY = ave_entropy
-    
     main()
     print (time.time()-t)
