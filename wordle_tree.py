@@ -7,9 +7,11 @@ uncomment lines 81-82 for that)
 
 import time
 import os.path
-import numpy as np
-import wordle
 import math
+import hashlib
+import numpy as np
+
+import wordle
 
 def generate_the_matrix(puzzle_words, guessing_words, possible_answers):
     ''' Generate the main matrix of answers: all guessing words X
@@ -22,10 +24,24 @@ def generate_the_matrix(puzzle_words, guessing_words, possible_answers):
             matrix[i][j] = possible_answers[tuple(guess.result)]
     return matrix
 
-def get_the_matrix(filename, puzzle_words, guessing_words, possible_answers):
-    ''' Load the matrix if saved version exists.
-    If not, generate, save, return. Use filename.
+def get_filename(puzzle_words, guessing_words, possible_answers):
+    ''' Hash three input objects, keep last 8 digits
     '''
+    h = hashlib.new('sha256')
+    h.update(str(puzzle_words.word_list).encode("utf-8"))
+    h.update(str(guessing_words.word_list).encode("utf-8"))
+    h.update(str(frozenset(possible_answers.items())).encode("utf-8"))
+    hashstr = h.hexdigest()
+    return f"wordle_matrix_{hashstr[:8]}.npy"
+    
+
+def get_the_matrix(puzzle_words, guessing_words, possible_answers):
+    ''' Load the matrix if saved version exists.
+    If not, generate, save, return.
+    Matrix saved as "wordle_matrix_[last 6 digits of hash].npy"
+    Hash is generated from all three inputs
+    '''
+    filename = get_filename(puzzle_words, guessing_words, possible_answers)
     if os.path.exists(filename):
         matrix = np.load(filename)
     else:
@@ -74,7 +90,7 @@ def get_top_guesses(word_ns, ignore_ns, guess_words_ns, matrix):
             if distribution.count(1) == len(distribution):
                 return [guess_word]
 
-    # Override the first guess
+    # Override the first guess, use SALET
     #if len(word_ns) == 2315:
     #    return [10183]
 
@@ -186,8 +202,8 @@ def main():
     puzzle_words = wordle.WordList("words-guess.txt")
     guessing_words = wordle.WordList("words-guess.txt", "words-all.txt")
     possible_answers = generate_all_possible_answers()
-    filename = "wordle_big_file.npy"
-    matrix = get_the_matrix(filename, puzzle_words, guessing_words, possible_answers)
+    matrix = get_the_matrix(puzzle_words, guessing_words, possible_answers)
+
     guess_words_ns = [n for n in range(len(guessing_words))]
     word_ns = [n for n in range(len(puzzle_words))]
     
