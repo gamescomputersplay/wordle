@@ -40,7 +40,6 @@ def absurdle_answer(remaining_words, guess, possible_answers, matrix):
     words = {i:[] for i in range(243)}
     for n in remaining_words:
         answers[matrix[n][guess]] += 1
-        words[matrix[n][guess]].append(guessing_words.word_list[n])
     worst_answer = -1
     highest_count = -1
 
