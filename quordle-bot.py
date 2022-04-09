@@ -1,4 +1,4 @@
-''' Quordle bot
+''' Quordle bot (practice mode)
 https://www.quordle.com/#/practice
 Open the game, F10 to start playing
 '''
@@ -22,7 +22,8 @@ def find_game(im):
     blue = (22, 78, 99)
 
     def find_edge(im, color, begins=True):
-        ''' Find the top border max of (black-go-gray)
+        ''' Find the top border (most pixels where "color" starts)
+        begins=False to find where it ends
         '''
         # number of lines to test
         lines = 30
