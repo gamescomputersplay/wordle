@@ -245,7 +245,7 @@ class Player:
         Guesses a random word from the whole list
     '''
 
-    def __init__(self):
+    def __init__(self, guessing_words):
         # five lists: which letters ae allowed in each spot
         self.mask = [set(list('abcdefghijklmnopqrstuvwxyz')) for _ in range(5)]
         # which letter has to be in the word, from green and yellow letters
@@ -406,7 +406,7 @@ def play_one_game(quiet=True, correct_word=None):
     from PlayerType
     '''
     game = Wordle(correct_word)
-    player = Player()
+    player = Player(guessing_words)
     done = False
 
     # Cycle until we are done
