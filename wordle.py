@@ -66,14 +66,15 @@ class WordList:
                 best_word = word
         return best_word
 
-    def get_maximized_word(self, letters):
-        ''' Return the word with maximized number of "letters"
+    def get_maximized_word(self, maximized_letters):
+        ''' Return the word with maximized number of unique "letters"
         '''
+        self.gen_letter_count()
         best_word = ""
         best_score = 0
         for word in self.word_list:
             this_score = 0
-            for letter in letters:
+            for letter in maximized_letters:
                 if letter in word:
                     this_score += 1
             if this_score > best_score:
@@ -127,29 +128,32 @@ class WordList:
                                              self.position_letter_count[i][letter])
             self.position_word_scores[word] = sum(word_score.values())
 
-    def filter_by_mask(self, mask, antimask, must_use):
-        ''' Removing words from the word list, according to the mask
+    def filter_by_mask(self, yes_mask, no_mask, allowed_mask):
+        ''' Removing words from the word list,
+        by checking with teh three masks
         '''
-        # I feel if would be faster to just create a new list instead of
-        # deleting in-place
         new_words = []
-        # make a copy. we'll be deleting letters (n case of doubles)
         for word in self.word_list:
-            # check if all the letters from must_use are present
-            for letter in must_use:
-                if letter not in word:
+            
+            # Yes_mask: should have that letter in that place
+            for n, must_have_letters in enumerate(yes_mask):
+                # use [0]: in YES mask there is no more than 1 item per slot
+                if must_have_letters and word[n] != must_have_letters[0]:
                     break
             else:
-                # check if the word complies to the mask
-                # if mask letter not found - discard
-                for i, letter in enumerate(word):
-                    if letter not in mask[i]:
+                # No_mask: should NOT have that letter in that place
+                fail = False
+                for n, forbidden_letters in enumerate(no_mask):
+                    for forbidden_letter in forbidden_letters:
+                        if word[n] == forbidden_letter:
+                            fail = True
+                    if fail:
                         break
                 else:
-                    # check if the word complies with antimask
-                    # if antimask letter found - discard
-                    for i, letter in enumerate(word):
-                        if letter in antimask[i]:
+                    # Allowed mask: should have allowed count of letters
+                    for letter in "abcdefghijklmnopqrstuvwxyz":
+                        count = word.count(letter)
+                        if letter not in allowed_mask[count]:
                             break
                     else:
                         new_words.append(word)
@@ -246,8 +250,16 @@ class Player:
     '''
 
     def __init__(self, guessing_words):
-        # five lists: which letters ae allowed in each spot
-        self.mask = [set(list('abcdefghijklmnopqrstuvwxyz')) for _ in range(5)]
+        # Mask
+        # Yes mask: this letters should be in these places
+        self.yes_mask = [[] for _ in range(5)]
+        # No mask: this letters should NOT be in these places
+        self.no_mask = [[] for _ in range(5)]
+        # Count mask: Word can have (n) such letters
+        #[[letters that can be 0 of], [1 of], [2 of], [3 of]]
+        self.allowed_mask = [set("abcdefghijklmnopqrstuvwxyz") for _ in range(4)]
+
+        
         # which letter has to be in the word, from green and yellow letters
         self.must_use = set()
         # copy of the global wordset (we'll be removing unfit words from it)
@@ -257,42 +269,51 @@ class Player:
         ''' Removing words from the word list, that don't fit with
         what we know about the word (using mask and must_use)
         '''
-        antimask = [set() for _ in range(5)]
-        self.remaining_words.filter_by_mask(self.mask, antimask, self.must_use)
+        self.remaining_words.filter_by_mask(
+            self.yes_mask, self.no_mask, self.allowed_mask)
 
     def reuse_green(self):
         ''' Try to re-use "green" space by putting some remaining letters there
         '''
+        def count_vowels(letters):
+            ''' Count vowels in teh list of letter
+            '''
+            count = 0
+            vowels = set(list("aoieu"))
+            for  letter in letters:
+                if letter in vowels:
+                    count += 1
+            return count
 
-        # 1. Find Green masks
-        # 2. Combine masks from non-green letters
-        mask_lens = [len(self.mask[i]) for i in range(5)]
-        combined_mask = set()
-        green_masks = []
-        for i, mask_len in enumerate(mask_lens):
-            if mask_len == 1:
-                green_masks.append(i)
-            else:
-                combined_mask = set.union(combined_mask, self.mask[i])
+        # Temp Yes mask is empty
+        temp_yes_mask = [[] for _ in range(5)]
+        
+        # Temp No mask is actual Yes mask
+        temp_no_mask = self.yes_mask
 
-        # Add some vowels for better chance of finding a good word
-        original_mask = combined_mask.copy()
-        combined_mask = set.union(combined_mask, set(["a", "e", "i", "o"]))
+        # Prioritise those that are present in all "allowed _mask[1]"
+        # (meaning they have never been grey) minus all yellow and greens
+        greens_n_yellows = set()
+        for letters in self.yes_mask + self.no_mask:
+            for letter in letters:
+                greens_n_yellows.add(letter)
 
-        # Create temporary masks to filter original word list
-        # Antimask to prevent from accidentally using green letters again
-        temp_mask = self.mask.copy()
-        temp_antimask = [set() for _ in range(5)]
-        for i in range(5):
-            if i in green_masks:
-                temp_antimask[i] = temp_mask[i]
-                temp_mask[i] = combined_mask
+        # Add vowels if needed
+        prority_letters = self.allowed_mask[1].difference(greens_n_yellows)
+        letters_for_allowed_mask = prority_letters
+        if count_vowels(prority_letters) == 0:
+            letters_for_allowed_mask = set.union(prority_letters, set(list("aoe")))
+            
+        # Temp Allowed mask: prority letters and some vowels
+        # [0] has all letters - any letter can be missed
+        temp_allowed_mask = [set("abcdefghijklmnopqurstuvwxyz")] + [
+            letters_for_allowed_mask for i in range(3)]
 
-        # Find the word to fit temporary mask
+        # Find the word to fit temporary mask, with maximized prioitized letters
         temp_words = guessing_words.copy()
-        temp_words.filter_by_mask(temp_mask, temp_antimask, set())
+        temp_words.filter_by_mask(temp_yes_mask, temp_no_mask, temp_allowed_mask)
         if len(temp_words) > 0:
-            return temp_words.get_maximized_word(original_mask)
+            return temp_words.get_maximized_word(list(prority_letters))
 
         return ""
 
@@ -309,14 +330,14 @@ class Player:
             return self.remaining_words.get_random_word()
 
         # list of masks' lenths
-        mask_lens = [len(self.mask[i]) for i in range(5)]
+        has_greens = 5 - self.yes_mask.count([])
         # Conditions for "re-use green" logic:
         # has Green; more than 2 potential answers
-        if "easymode" in params and mask_lens.count(1) > 0 \
+        if "easymode" in params and has_greens > 0 \
            and len(self.remaining_words) > 2:
             # if reusing green is successful, return that word
             reuse_green_word = self.reuse_green()
-            if reuse_green_word != "":
+            if reuse_green_word != "":      
                 return reuse_green_word
 
         # recount / don't recount all scores
@@ -329,70 +350,80 @@ class Player:
             return self.remaining_words.get_hiscore_word(use_position=True)
         return self.remaining_words.get_hiscore_word(use_position=False)
 
-    def update_mask_green(self, guess):
-        ''' Use Green result: delete all other letters in this mask
+    def update_yes_mask(self, guess):
+        ''' Track letters that should be in this place (from green)
         '''
         for i, letter_result in enumerate(guess.result):
-            if letter_result == 2: # green: right letter and place
-                self.mask[i] = set(guess.word[i])
-                self.must_use.add(guess.word[i])
+            if letter_result == 2: # green: should have this letter here
+                if guess.word[i] not in self.yes_mask[i]:
+                    self.yes_mask[i].append(guess.word[i])
 
-    def update_mask_yellow(self, guess):
-        ''' Use Yellow
-        1. Delete this letter in this mask
-        2. Add it to "must use"
+    def update_no_mask(self, guess):
+        ''' Track letters that should not be in this place (from yellow)
         '''
         # Delete the letter in the same place in the mask
         for i, letter_result in enumerate(guess.result):
-            if letter_result == 1:
-                if guess.word[i] in self.mask[i]:
-                    self.mask[i].remove(guess.word[i])
-                self.must_use.add(guess.word[i])
+            if letter_result == 1: # yellow: should not have this letter here
+                if guess.word[i] not in self.no_mask[i]:
+                    self.no_mask[i].append(guess.word[i])
+            # This is grey, but not the only letter in the word
+            if letter_result == 0 and guess.word.count(guess.word[i])>1:
+                if guess.word[i] not in self.no_mask[i]:
+                    self.no_mask[i].append(guess.word[i])
 
-    def update_mask_grey(self, guess):
-        ''' Use Grey results. Delete this letter from all masks
+    def update_allowed_mask(self, guess):
+        ''' Track how many which letters should be in the word
         '''
-        letters_to_delete = []
-        for i, letter_result in enumerate(guess.result):
-            if letter_result == 0: # gray: no letter in this word
-                # if it is also was in green or yellow -
-                # only delete in this place
-                if guess.word[i] in self.must_use \
-                   and guess.word[i] in self.mask[i]:
-                    self.mask[i].remove(guess.word[i])
-                # this is a weird case that can occure in "easymode" strategy
-                # out-of-remainig list word can accidentaly trigger deleting
-                # more words than it should. This stops it.
-                elif guess.word[i] in self.must_use \
-                   and guess.word[i] not in self.mask[i]:
-                    pass
-                # if not - remove everywhere
-                else:
-                    letters_to_delete.append(guess.word[i])
-        # This is where we remove them from all masks
-        for i, one_mask in enumerate(self.mask):
-            for letter_to_delete in letters_to_delete:
-                if letter_to_delete in one_mask:
-                    one_mask.remove(letter_to_delete)
+        # count colors for each letter, like this
+        # {"a":[2,0], "b":[2,1], "c":[0]}
+        letter_count = {}
+        for i, letter in enumerate(guess.word):
+            if letter in letter_count:
+                letter_count[letter].append(guess.result[i])
+            else:
+                letter_count[letter] = [guess.result[i]]
+
+        # Go through each letter count and update count_mask
+        for letter, stats in letter_count.items():
+            
+            # Case Grey:
+            # Word should have no more that {count of other numbers except 0}
+            # of this letter. e.g. [0] - none [2,0] - 1, [2,1,0] - 2
+            if 0 in stats:
+                allowed_count = len(stats) - stats.count(0)
+                for i in range(allowed_count + 1, 4):
+                    if letter in self.allowed_mask[i]:
+                        self.allowed_mask[i].remove(letter)
+
+            # Case Yellow / Green
+            # Word should have at leaset {count of 1&2s letters} of these
+            if 1 in stats or 2 in stats:
+                required_count = stats.count(1) + stats.count(2)
+                for i in range(0, required_count):
+                    if letter in self.allowed_mask[i]:
+                        self.allowed_mask[i].remove(letter)
+        return
+                
 
     def update_mask_with_guess(self, guess):
-        ''' Combine mask updating functions
-        according to parameters
+        ''' Combined mask updating functions
         '''
-        # the order is important for correct handling of double letters
-        self.update_mask_green(guess)
-        self.update_mask_yellow(guess)
-        self.update_mask_grey(guess)
+        self.update_yes_mask(guess)
+        self.update_no_mask(guess)
+        self.update_allowed_mask(guess)
 
-
-    def update_mask_with_wordlist(self):
-        ''' Update the mask according to the word in the remaining_words
+    def update_mask_with_remaining_words(self):
+        ''' Updtae allowed_mask, based on letter freq of remaining words
         '''
-        self.mask = [set() for _ in range(5)]
-        for word in self.remaining_words.word_list:
-            for i, letter in enumerate(word):
-                self.mask[i].add(letter)
-
+        # Update allow_mask, knowing letter count of remaining words
+        self.remaining_words.gen_letter_count()
+        for letter, count in self.remaining_words.letter_count.items():
+            # If there is no such words in the whole list
+            # remove it from mask
+            if count == 0:
+                for i in range(1, 3):
+                    if letter in self.allowed_mask[i]:
+                        self.allowed_mask[i].remove(letter)
 
     def remove_word(self, word):
         ''' Remove a word from possible guesses
@@ -414,7 +445,7 @@ def play_one_game(quiet=True, correct_word=None):
 
         # Make a guess
         players_guess = player.make_guess()
-
+        
         # Play the guess, see if we are done
         if game.guess(players_guess):
             done = True
@@ -427,11 +458,13 @@ def play_one_game(quiet=True, correct_word=None):
 
         # Filter the word down according to new mask
         player.filter_word_list()
-        # Filter the mask according to the remaining words
-        player.update_mask_with_wordlist()
+
+        # Update the mask according to remaining words
+        player.update_mask_with_remaining_words()
 
     if not quiet:
         print (game)
+        
     if game.guesses[-1].guessed_correctly:
         return game.guesses
     return -1 # This shouldn't happen
