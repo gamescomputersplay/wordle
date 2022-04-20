@@ -13,6 +13,34 @@ from PIL import Image, ImageDraw
 import wordle
 import wordle_tree
 
+def find_edge(im, color, begins=True):
+    ''' Find the top border (most pixels where "color" starts)
+    begins=False to find where it ends
+    '''
+    # number of lines to test
+    lines = 30
+    # list of all occasions black turn gray
+    found = {}
+    
+    wid, hgt = im.size
+    px = im.load()
+    
+    for i in range(10, wid, wid // lines):
+        for j in range(1, hgt):
+            if begins and px[i,j] == color and px[i,j-1] != color or \
+               not begins  and px[i,j] != color and px[i,j-1] == color:
+                if j in found:
+                    found[j] += 1
+                else:
+                    found[j] = 1
+    maxcount = 0
+    edge = None
+    for j, count in found.items():
+        if count > maxcount:
+            maxcount = count
+            edge = j
+    return edge
+    
 def find_game(im):
     ''' Find the location of the game (area with guesses)
     from a screenshot
@@ -20,34 +48,6 @@ def find_game(im):
 
     black = (17, 24, 39)
     blue = (22, 78, 99)
-
-    def find_edge(im, color, begins=True):
-        ''' Find the top border (most pixels where "color" starts)
-        begins=False to find where it ends
-        '''
-        # number of lines to test
-        lines = 30
-        # list of all occasions black turn gray
-        found = {}
-        
-        wid, hgt = im.size
-        px = im.load()
-        
-        for i in range(10, wid, wid // lines):
-            for j in range(1, hgt):
-                if begins and px[i,j] == color and px[i,j-1] != color or \
-                   not begins  and px[i,j] != color and px[i,j-1] == color:
-                    if j in found:
-                        found[j] += 1
-                    else:
-                        found[j] = 1
-        maxcount = 0
-        edge = None
-        for j, count in found.items():
-            if count > maxcount:
-                maxcount = count
-                edge = j
-        return edge
 
     top = find_edge(im, black, False)
     bottom = find_edge(im, blue, True)
@@ -82,57 +82,60 @@ def read_board(im):
     '''
     px = im.load()
     result = []
-    
-    row_start = im.size[1] // 15
-    row_height = im.size[1] // 10
-    col_start = im.size[1] // 13
-    col_height = int(im.size[1] // 4.8)
+
+    columns = [1,3,5,7,9]
+    columns_coords = [int(col / 10 * im.size[0]) for col in columns]
 
     # Color codes for gray, yellow, green 
     pix_colors = [(55, 65, 81), (255, 204, 0), (0, 204, 136)]
 
-    for row in range(row_start, im.size[1], row_height):
-        this_line = []
-
-        for col in range(col_start, im.size[0], col_height):
-            pixel = tuple(px[col, row])
-
+    for column in columns_coords:
+        i = column
+        for j in range(im.size[1]-1, 0, -1):
+            
+            pixel = tuple(px[i, j])
+            
+            found = False
             for n, pix_color in enumerate(pix_colors):
                 if color_diff(pix_color, pixel) < 20:
-                    this_line.append(n)
-                    break
-                
-        # debug save faulty picture
-        if this_line and len(this_line) != 5:
-            im.save("color_error.png")
-            
-        if this_line:
-            result.append(this_line)
+                    result.append(n)
+                    found = True
+            if found:
+                break
 
     return result
 
-def get_answers(borders, turn):
+def get_answers(im):
     ''' Take a screenshot, crop to borders
     Read the answers. Keep only those for the turn "turn".
     Return them in a list
     '''
-    im = pyautogui.screenshot()
-    im.save("screen2.png")
-    im = im.crop(borders)
     quarters = get_quarters(im)
-    results = []
-    for quarter in quarters:
-        results.append(read_board(quarter))
-
-    # Filter only the turn "turn"
     answers = []
-    for result in results:
-        if len(result) < turn:
-            answers.append(None)
-        else:
-            answers.append(result[turn-1])
+    for quarter in quarters:
+        answers.append(read_board(quarter))
 
     return answers
+
+def click_out_achievements(im, borders):
+    ''' Search for green achievements popup.
+    Click out of it if needed
+    '''
+    green = (22, 101, 52)
+    top = find_edge(im, green, begins=True)
+    # Green found - there is an achievement popup
+    if top is not None:
+        bottom = find_edge(im, green, begins=False)
+        sideways = im.transpose(Image.ROTATE_270)
+        right = find_edge(sideways, green, begins=False)
+        close_popup = (borders[0] + right - (bottom - top) // 2,
+                       borders[1] + top + (bottom - top) // 2)
+        print ("Clicking out of the popup")
+        pyautogui.click(close_popup)
+        time.sleep(.5)
+        return True
+    return False
+    
 
 def click_letter(letter, click_coords):
     ''' click the keyboard
@@ -213,10 +216,10 @@ def find_best_guess(remaining_guesses, puzzle_word_ns, matrix):
     if not selected_remaining_guesses:
         return random.choice(list(all_remaining_guesses))
     
-    if len(all_remaining_guesses) > MIN_USE_FULL_LIST:
+    if len(all_remaining_guesses) < MIN_USE_FULL_LIST:
         candidates = all_remaining_guesses
     else:
-        candidates = puzzle_word_ns
+        candidates = selected_remaining_guesses
         
     for candidate in candidates:
         total_dist = 0
@@ -245,7 +248,6 @@ def play_one_game(borders, matrix, puzzle_words, click_coords):
 
         # Pick a guessing word
         if max(turns_count) == 1:
-            #guess = 10183 # salet
             guess = random.choice(puzzle_word_ns)
         else:
             guess = find_best_guess(remaining_guesses, puzzle_word_ns, matrix)
@@ -254,11 +256,34 @@ def play_one_game(borders, matrix, puzzle_words, click_coords):
         
         for letter in guess_word + "=":
             click_letter(letter, click_coords)
-        time.sleep(.2)
-        
+        time.sleep(.3)
+
+        # I can't read the results of 9th guess
+        # I assume if there was only one option left, I must have won
+        # Otherwise I lost
+        if max(turns_count) == 9:
+            remaining_total = 0
+            for one_rem_guess in remaining_guesses:
+                if one_rem_guess is not None:
+                    remaining_total += len(one_rem_guess)
+            if remaining_total == 1:
+                print ("I think I won")
+                break
+            else:
+                print ("I think I lost the game. Doh!")
+                return 10
+
+
         # Read the screen for answers
-        answers = get_answers(borders, max(turns_count))
+        im = pyautogui.screenshot()
+        im = im.crop(borders)
+
+        while click_out_achievements(im, borders):
+            im = pyautogui.screenshot()
+            im = im.crop(borders)
+        answers = get_answers(im)
         print (f"Answers: {answers}")
+        
         # Encode them into 0-242 format
         coded_answers = [possible_answers[tuple(answer)]
                          if answer is not None else None
@@ -275,8 +300,13 @@ def play_one_game(borders, matrix, puzzle_words, click_coords):
                 is_solved[n] = True
 
         # Game over if solved out
-        if max(turns_count) == 10 or all(is_solved):
+        if all(is_solved):
             break
+
+        # Keep track of counting attempts   
+        for i, solved in enumerate(is_solved):
+            if not solved:
+                turns_count[i] += 1
 
         # Print the size of teh remaining options
         print ("Remaining options:",
@@ -284,13 +314,9 @@ def play_one_game(borders, matrix, puzzle_words, click_coords):
                 if one_rem_guess is not None else "-"
                 for one_rem_guess in remaining_guesses])
         
-        # Keep track of counting attempts   
-        for i, solved in enumerate(is_solved):
-            if not solved:
-                turns_count[i] += 1
 
     print (f"\nResults: {turns_count}")
-            
+    return max(turns_count)
 
 def main():
     ''' Main function. read the screen, find the game
@@ -303,25 +329,31 @@ def main():
                             puzzle_words, puzzle_words, possible_answers)
     
     im = pyautogui.screenshot()
-    im.save("screen1.png")
 
     # Find the game on the screen
     borders = find_game(im)
     print (f"Found game at: {borders}")
     # Calculate where keys on the keyboard are
     click_coords = generate_click_coords((borders[0], borders[3]))
-    
-    for i in range(MAX_GAMES):
+
+    wins = 0
+
+    for game in range(MAX_GAMES):
         
-        print (f"\nGAME {i+1}\n=======")
-        play_one_game(borders, matrix, puzzle_words, click_coords)
-        
+        print (f"\nGAME {game+1}\n=======")
+        result = play_one_game(borders, matrix, puzzle_words, click_coords)
+
+        if result <= 9:
+            wins += 1
+        print (f" Wins: {wins}/{game+1}, {wins/(game+1):.1%}")
+
         # Click "New game"
-        pyautogui.click((borders[0]+borders[2]) // 2, borders[1]+100)
-        time.sleep(.3)
+        if game != MAX_GAMES - 1:
+            pyautogui.click((borders[0]+borders[2]) // 2, borders[1]+100)
+            time.sleep(.3)
 
 # How many games to play
-MAX_GAMES = 10
+MAX_GAMES = 100
 
 # Run on F10
 keyboard.add_hotkey('f10', main)
