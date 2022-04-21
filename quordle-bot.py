@@ -8,7 +8,7 @@ import keyboard
 import random
 import time
 
-from PIL import Image, ImageDraw
+from PIL import Image
 
 import wordle
 import wordle_tree
@@ -135,6 +135,22 @@ def click_out_achievements(im, borders):
         time.sleep(.5)
         return True
     return False
+
+def did_we_lose(im, borders):
+    ''' Check if we lost on the end game screen, by looking for red pixels
+    (Because I can't read the answer to the 9th guess)
+    '''
+    red = (232, 18, 36)
+    results_area_coords = ((borders[0] + borders[2]) // 2 - 50, borders[3],
+                   (borders[0] + borders[2]) // 2 + 50, borders[3] + 100)
+    results_area = im.crop(results_area_coords)
+    results_area.save("results.png")
+    px = results_area.load()
+    for i in range(0, results_area.size[0], 10):
+        for j in range(0, results_area.size[1], 10):
+            if px[i, j] == red:
+                return True
+    return False
     
 
 def click_letter(letter, click_coords):
@@ -196,10 +212,10 @@ def find_best_guess(remaining_guesses, puzzle_word_ns, matrix):
 
     # Only select remaining lists smaller than MAX_SELECTED
     # bigger number is slower, but more accurate
-    MAX_SELECTED = 30
+    MAX_SELECTED = 100
     # minimum selected words, to start using full list
     # smaller is faster, but less accurate
-    MIN_USE_FULL_LIST = 30
+    MIN_USE_FULL_LIST = 100
     
     # All combined remaining guesses
     all_remaining_guesses = set()
@@ -262,16 +278,15 @@ def play_one_game(borders, matrix, puzzle_words, click_coords):
         # I assume if there was only one option left, I must have won
         # Otherwise I lost
         if max(turns_count) == 9:
-            remaining_total = 0
-            for one_rem_guess in remaining_guesses:
-                if one_rem_guess is not None:
-                    remaining_total += len(one_rem_guess)
-            if remaining_total == 1:
+            time.sleep(.2)
+            im = pyautogui.screenshot()
+
+            if did_we_lose(im, borders):
+                print ("I think I lost")
+                return 10
+            else:
                 print ("I think I won")
                 break
-            else:
-                print ("I think I lost the game. Doh!")
-                return 10
 
 
         # Read the screen for answers
@@ -329,7 +344,7 @@ def main():
                             puzzle_words, puzzle_words, possible_answers)
     
     im = pyautogui.screenshot()
-
+    
     # Find the game on the screen
     borders = find_game(im)
     print (f"Found game at: {borders}")
@@ -353,7 +368,8 @@ def main():
             time.sleep(.3)
 
 # How many games to play
-MAX_GAMES = 100
+MAX_GAMES = 10
+
 
 # Run on F10
 keyboard.add_hotkey('f10', main)
