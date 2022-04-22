@@ -39,10 +39,12 @@ The best result is achieved with varying branching factors (see lines 87-94).
 
 Result for this one is a 100% winning rate. Best average game length is 3.421 (same as 3b1b got in his video)
 
+_Requires NumPy_
+
 # Quordle Bot (quordle-bot.py)
 
-Quordle (quordle.com) is a simultaneous Wordle on 4 boards. This solver plays the game from screenshots. Just launch the solver, open Quordle and press F10 to start it. 
-The strategy is selected to be reasonably fast (1 second of calculations per game on average, not counting clicking/reaction time), with the winning rate somewhere between 99% and 100%.
+Quordle (https://www.quordle.com) is a simultaneous Wordle on 4 boards. This solver plays the game from screenshots. Just launch the solver, open Quordle and press F10 to start it. 
+The strategy is selected to be reasonably fast (1 second of calculations per game on average, not counting clicking/reaction time), with the winning rate somewhere around 98%.
 
 # Absurdle Solver (absurdle-solver.py)
 
@@ -53,3 +55,13 @@ The Solver finds the 4-guess solution to the game (3-guess is impossible).
 
 Challenge  Mode of Absurdle gives the player the  target word. Player's goal is to manipulate the game into having that word as the final answer.
 The bot plays the game from screenshots.
+
+_Requires Tesseract (to read the target word)_
+
+# Survivle Bot (survivle_bot.py)
+
+Survivle https://lazyguyy.github.io/survivle/ is the reversed version of Wordle, where you need to guess the word in 7 turns or more to win.
+Bot plays the game from screenshots, winning rate around 50%.
+
+
+Note: all bots are tested in dark mode, with 1920x1080 resolution, with 125% scale. Other resolutions may require additional shaman dances to work.
