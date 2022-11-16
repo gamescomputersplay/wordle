@@ -127,3 +127,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Hello Wordle SIM
+# Folder with cross-check matrixes
+wordle_matrixes/

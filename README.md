@@ -63,5 +63,9 @@ _Requires Tesseract (to read the target word)_
 Survivle https://lazyguyy.github.io/survivle/ is the reversed version of Wordle, where you need to guess the word in 7 turns or more to win.
 Bot plays the game from screenshots, winning rate around 50%.
 
+# Hello Wordle Simulator and Bot (hello_wordle_sim.py and hello_wordle_bot.py)
+
+Hello Wordle (https://hellowordl.net) is a universal Wordle version, that includes word lengths from 4 to 11 (even to 15), and 3 difficulty level. Simulator just plays Hello Wordle games internally, measuring win rate for different word lengths and difficulties. The bot plays Hello Wordle from screenshots.
+
 
 Note: all bots are tested in dark mode, with 1920x1080 resolution, with 125% scale. Other resolutions may require additional shaman dances to work.
