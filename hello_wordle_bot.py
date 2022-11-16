@@ -61,13 +61,13 @@ class WordleBot:
             matches = {}
 
             pix = screenshot.load()
-            # Analyse "probes" columnes
+            # Analyze "probes" columns
             for i in range(0, screenshot.size[0], screenshot.size[0] // probes):
 
                 # For each column, look at all pixels
                 for j in range(3, screenshot.size[1] - 10):
 
-                    # Particluarly, look for
+                    # Particularly, look for
                     # (black, black, grey, grey, black, black) pixel pattern
                     for k in range(6):
                         if k in (2, 3) and pix[i, j + k] != grey:
@@ -85,7 +85,7 @@ class WordleBot:
             Return empty list if invalid or list of 1st pixels if valid
             '''
 
-            # Only keep the max matches. There might be faulse positives,
+            # Only keep the max matches. There might be false positives,
             # but it is unlikely there will be as many as tru positives
             max_value = max(list(matches_raw.values()))
             matches = {key:value for key, value in matches_raw.items() if value == max_value}
@@ -188,7 +188,7 @@ class WordleBot:
 
             # Only keep secret words that comply with the last guess and answer
             secrets.reduce_by_guess(guess_n, self.data.pos_answers[answer], self.data)
-            # Remove ser=crets and guesses according to the chosen difficulty
+            # Remove secrets and guesses according to the chosen difficulty
             if difficulty != 0:
                 guesses.reduce_by_difficulty(guess, answer, difficulty)
                 secrets.reduce_by_difficulty(guess, answer, difficulty)
@@ -207,18 +207,18 @@ def main():
     strength = 1
     difficulty = 2
 
-    # Variables to store resiults
+    # Variables to store results
     wins = []
     turns = []
 
-    wordlebot = WordleBot()
+    wordle_bot = WordleBot()
     graph = hello_wordle_bot_vis.Visualization()
 
     for game_n in range(runs):
 
         print(f"\nStarting game #{game_n + 1}")
 
-        result = wordlebot.play_one_game(strength=strength,
+        result = wordle_bot.play_one_game(strength=strength,
                                          difficulty=difficulty)
 
         if result > 0:
@@ -233,11 +233,11 @@ def main():
               f"Average length: {0 if sum(wins) == 0 else sum(turns)/sum(wins):.2f}")
         graph.show(wins[-1], turns[-1] if result > 0 else -1)
 
-        wordlebot.start_new_game()
+        wordle_bot.start_new_game()
 
         # This is only needed for 12-15-letter games,
         # as Hello Wordle keeps resetting non-standard game length
-        # wordlebot.switch_to_15_again()
+        # wordle_bot.switch_to_15_again()
 
     print("\nDone")
     graph.pause(5)

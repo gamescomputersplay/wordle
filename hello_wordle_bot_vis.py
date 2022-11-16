@@ -13,9 +13,9 @@ class Visualization:
         # Plot area. Defined here for the first time, but will be redefined on each call
         self.fig, (self.ax_wins, self.ax_turns) = plt.subplots(2, 1)
 
-        # Move the resulting window to those coordintes
+        # Move the resulting window to those coordinates
         self.fig.canvas.manager.window.wm_geometry("+%d+%d" % (10, 10))
-        # Setthe graph area size
+        # Set the graph area size
         self.fig.set_size_inches(6, 8)
 
         # Move axes a little
@@ -31,7 +31,7 @@ class Visualization:
         self.wins_count = 0
         self.wins_graph = []
 
-        # Gray area to showmargin of error
+        # Gray area to show margin of error
         self.upper_error_margin = []
         self.lower_error_margin = []
 
@@ -114,14 +114,14 @@ class Visualization:
         '''
         # Win rate
         self.wins_count += win
-        winrate = self.wins_count / (len(self.wins_graph) + 1)
-        self.wins_graph.append(winrate)
+        win_rate = self.wins_count / (len(self.wins_graph) + 1)
+        self.wins_graph.append(win_rate)
 
         #  Margin of  error
-        margin = 1.96 * math.sqrt(winrate * (1-winrate) /
+        margin = 1.96 * math.sqrt(win_rate * (1-win_rate) /
                                   (len(self.wins_graph)+1))
-        self.upper_error_margin.append(min(1, winrate + margin))
-        self.lower_error_margin.append(max(0, winrate - margin))
+        self.upper_error_margin.append(min(1, win_rate + margin))
+        self.lower_error_margin.append(max(0, win_rate - margin))
 
         # For bar  chart
         if turns != -1:
@@ -142,7 +142,7 @@ class Visualization:
 
     @staticmethod
     def pause(duration):
-        ''' Pause diaplying for "duration" seconds
+        ''' Pause playing for "duration" seconds
         Useful in the end of the simulation to keep the graph n screen'''
         plt.pause(duration)
 

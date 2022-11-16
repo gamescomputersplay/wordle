@@ -1,6 +1,6 @@
 ''' Hello Wordle Simulator
 Can simulate games of Wordle of 2-15 letters long,
-played on 3 levels of difficulty (normal, hard, ultrahard).
+played on 3 levels of difficulty (normal, hard, ultra hard).
 Solver is aware of both allowed and secret words dictionaries,
 uses imperfect, but fast solution method.
 '''
@@ -17,7 +17,7 @@ import numpy as np
 
 @dataclass
 class SimulationOptions:
-    ''' Clas for all simulation options
+    ''' Class for all simulation options
     '''
 
     # Number of runs
@@ -37,7 +37,7 @@ class SimulationOptions:
     verbose: bool = False
 
     # File to keep log all games (each line is a space separated
-    # list of guesses, that goes on, until cerrect answer is found).
+    # list of guesses, that goes on, until correct answer is found).
     # Final word is the guess word, if there are 6 or fewer guesses,
     # the game was won.
     logfile_name: str = ""
@@ -48,9 +48,9 @@ class WordList():
     Keeps all the words in "words" dict as {n:"word"}
     '''
 
-    def __init__(self, wordsfile=None, wordslen=5, wordslist=None):
-        ''' New Words list. Take words of length wordslen
-        from the file wordsfile and/or list wordslist.
+    def __init__(self, words_file=None, words_len=5, words_list=None):
+        ''' New Words list. Take words of length words_len
+        from the file words_file and/or list words_list.
         Word list stored as {n:"word"},
         so words could be deleted but we still have their numbers.
         '''
@@ -65,26 +65,26 @@ class WordList():
 
         word_count = 0
         # Add words from the file
-        if wordsfile:
-            with open(wordsfile, "r", encoding="UTF-8") as words:
+        if words_file:
+            with open(words_file, "r", encoding="UTF-8") as words:
                 for line in words:
                     word = line.strip()
-                    if len(word) == wordslen and "*" not in word:
+                    if len(word) == words_len and "*" not in word:
                         self.words[word_count] = word
                         self.reverse[word] = word_count
                         word_count += 1
 
         # Add worlds from the list (useful for debugging)
-        if wordslist:
-            for word in wordslist:
-                if len(word) == wordslen and "*" not in word:
+        if words_list:
+            for word in words_list:
+                if len(word) == words_len and "*" not in word:
                     self.words[word_count] = word
                     self.reverse[word] = word_count
                     word_count += 1
 
     def get_distribution(self, guess_n, data):
         ''' Given a number of a guessing word, return list of lengths of
-        resulting wordlists, if this guess is played.
+        resulting word lists, if this guess is played.
         data is WData object for lists of secrets and guesses
         '''
         # This is where we store count of words for each possible answer
@@ -101,7 +101,7 @@ class WordList():
         ''' Try "strength" random guesses, and return one
         that produces the longest distribution
         if strength == -1, check all guesses (very slow)
-        Return (best word number, resulting distributuion length)
+        Return (best word number, resulting distribution length)
         '''
         # If there is one word lest - return this word
         if len(self) == 1:
@@ -111,13 +111,13 @@ class WordList():
         # If the list of possible secret words is small enough:
         # does any of the words in it break down the list into
         # the distribution of maximum possible length.
-        # This part is skipped with strangth == -1
-        # (as we are going to analyse all possible words anyway)
+        # This part is skipped with strength == -1
+        # (as we are going to analyze all possible words anyway)
         if len(self) < strength:
             for secret_n in self.words:
                 guess_n = guesses.word2n(self.words[secret_n])
                 distribution = self.get_distribution(guess_n, data)
-                # Resulting distribution is exaclty as big as the
+                # Resulting distribution is exactly as big as the
                 # list of remaining secrets: return that
                 if distribution == len(self):
                     return guess_n, distribution
@@ -157,7 +157,7 @@ class WordList():
     # Following are functions to be used by reduce_by_difficulty
     @staticmethod
     def check_green(word, guess, answer):
-        ''' Check if "GREEN" condition is fulfulled
+        ''' Check if "GREEN" condition is fulfilled
         Green letter is in that place.
         If found, replace it with "*"
         '''
@@ -171,7 +171,7 @@ class WordList():
 
     @staticmethod
     def check_yellow_lax(word, guess, answer):
-        ''' Check if "SIMPLE YELLOW" condition is fulfulled:
+        ''' Check if "SIMPLE YELLOW" condition is fulfilled:
         Yellow letter is in word
         If found, replace it with "*"
         '''
@@ -196,7 +196,7 @@ class WordList():
 
     @staticmethod
     def check_yellow_strict(word, guess, answer):
-        ''' Check if "STRICT YELLOW" condition is fulfulled
+        ''' Check if "STRICT YELLOW" condition is fulfilled
         Yellow should not contain this letter
         '''
         for position, (g_letter, g_result) in enumerate(zip(guess, answer)):
@@ -206,7 +206,7 @@ class WordList():
 
     @staticmethod
     def check_grey(word, guess, answer):
-        ''' Check if "GREY" condition is fulfulled:
+        ''' Check if "GREY" condition is fulfilled:
         Grey letter is not in word
         '''
         for g_letter, g_result in zip(guess, answer):
@@ -218,7 +218,7 @@ class WordList():
         ''' Check if there is a limit on letter count (it happens when
         you have "green and grey", "yellow and grey" of the same letter
         Add instance variable "max_allowed_letter_count" with
-        {letter: max_zllowed count}
+        {letter: max_allowed count}
         '''
         self.max_allowed_letter_count = {}
         greens_n_yellows = []
@@ -231,7 +231,7 @@ class WordList():
                 greens_n_yellows.append(g_letter)
 
         # Allowed count happens when you have greys and not greys
-        # It is eual to the number of non-greys in this situation
+        # It is equal to the number of non-greys in this situation
         for letter in "abcdefghijklmnopqrstuvwxyz":
             if letter in greens_n_yellows and letter in greys:
                 self.max_allowed_letter_count[letter] = \
@@ -249,7 +249,7 @@ class WordList():
     def reduce_by_difficulty(self, guess, answer, difficulty):
         ''' Given the guess and answer, filter the list,
         so it would comply with HARD (difficulty==1) and
-        ULTRA HARD (difficluty==2) rules.
+        ULTRA HARD (difficulty==2) rules.
         Used for the list of guesses - as not all guesses are valid on
         higher difficulties.
         '''
@@ -307,7 +307,7 @@ class WordList():
         return random.sample(list(sample_space), sample_size)
 
     def copy(self):
-        ''' Create and retuen a copy of itself, by copying internal dicts
+        ''' Create and return a copy of itself, by copying internal dicts
         '''
         the_copy = WordList()
         the_copy.words = self.words.copy()
@@ -346,7 +346,7 @@ class WordList():
 
 
 class WData():
-    ''' Class to calculate all necessary data forr the solution:
+    ''' Class to calculate all necessary data for the solution:
     intersection of guesses and answers, list of answers etc.
     '''
 
@@ -354,7 +354,7 @@ class WData():
     folder_name = "./wordle_matrixes/"
 
     def __init__(self, guesses, secrets):
-        ''' Generate the data. Incouming are two WordList objects
+        ''' Generate the data. Incoming are two WordList objects
         '''
         # Word length
         self.word_length = len(secrets.words[0])
@@ -364,7 +364,7 @@ class WData():
 
     @staticmethod
     def generate_all_possible_answers(word_len):
-        ''' Generate all posible answers for the word length word_len.
+        ''' Generate all possible answers for the word length word_len.
         Put them in a dictionary like this:
         {(0,0,0,0,0): 0, (0,0,0,0,1): 1,  ..., (2,2,2,2,2): 242}
         '''
@@ -383,13 +383,13 @@ class WData():
         ''' Hash two input word lists, keep last 8 digits.
         Use that in the file name of the cross-check file (matrix).
         This way we can re-use previously calculated data,
-        but we'll imediately see if it is not up-to-date.
+        but we'll immediately see if it is not up-to-date.
         '''
         hashed_items = hashlib.new('sha256')
         hashed_items.update(str(secrets.words).encode("utf-8"))
         hashed_items.update(str(guesses.words).encode("utf-8"))
-        hashstr = hashed_items.hexdigest()
-        return f"{WData.folder_name}wordle_matrix_{hashstr[:8]}.npy"
+        hash_str = hashed_items.hexdigest()
+        return f"{WData.folder_name}wordle_matrix_{hash_str[:8]}.npy"
 
     def get_the_matrix(self, secrets, guesses):
         ''' Load the matrix if saved version exists.
@@ -448,7 +448,7 @@ class WData():
 
 class Wordle:
     ''' Class to hold one game's data: the secret word, guess attempts, result.
-    This class has no inforamtion about word lists, it only has a secret word
+    This class has no information about word lists, it only has a secret word
     and deals with guesses and answers.
     '''
 
@@ -460,7 +460,7 @@ class Wordle:
 
     def make_move(self, guess_word):
         ''' One Move in wordle. Gets a guess in (as a word),
-        returns an asnwer (as (2,1,1,1,0))
+        returns an answer (as (2,1,1,1,0))
         '''
         answer = get_the_answer(guess_word, self.secret_word)
         self.history.append((guess_word, answer))
@@ -528,8 +528,8 @@ def get_the_answer(guess_word, correct_word):
 def one_game(secrets_original, guesses_original, data,
              difficulty=0, strength=100):
     ''' Playing one game of Wordle.
-    Imputs WordList objects for secret words, possible guesses,
-    cross-check data, dificulty level of Wordle, strength of the bot.
+    Inputs WordList objects for secret words, possible guesses,
+    cross-check data, difficulty level of Wordle, strength of the bot.
     Returns the Wordle object with finished game.
     '''
 
@@ -555,7 +555,7 @@ def one_game(secrets_original, guesses_original, data,
         # Main part of what bot does: pick the guess
         guess_n, _ = secrets.find_best_guess(guesses, data, strength=strength)
 
-        # Transform it in a word and get the answr from the egane
+        # Transform it in a word and get the answer from the game
         guess = guesses.words[guess_n]
         answer = game.make_move(guess)
 
@@ -577,7 +577,7 @@ def one_game(secrets_original, guesses_original, data,
 def simulation(options: SimulationOptions):
     ''' Simulation. Play the games run times
     verbose=True to print out each game
-    Returns win rate, average leangth of all games
+    Returns win rate, average length of all games
     '''
 
     # Initiate word lists and data
@@ -604,16 +604,16 @@ def simulation(options: SimulationOptions):
         with open(options.logfile_name, "w", encoding="utf-8") as log_fs:
             log_fs.write(log)
 
-    # Return winrate, average game length, max length
-    winrate = wins / options.runs
+    # Return win rate, average game length, max length
+    win_rate = wins / options.runs
     ave_length = sum(results) / wins if wins > 0 else 0
 
-    return winrate, ave_length
+    return win_rate, ave_length
 
 
 def find_one_best_opening(secrets, guesses, data):
     ''' Find the best opening word (has largest distribution).
-    Also, how lagre was the distributio nand
+    Also, how large was the distribution and
     was it as big as secrets list?
     '''
     word_n, distribution = secrets.find_best_guess(guesses, data, strength=-1)
@@ -632,7 +632,7 @@ def find_all_best_openings():
 
 
 def show_word_stat():
-    ''' Display word count for all word lenths
+    ''' Display word count for all word lengths
     '''
     for word_length in range(1, 16):
         secrets = WordList("hello-wordle-secret.txt", word_length)
@@ -668,7 +668,7 @@ def main():
         verbose=False,
         # Bot strength (how many random words it choses the guess from)
         strength=5,
-        # File to log out the games (1 gane - 1 line)
+        # File to log out the games (1 game - 1 line)
         # logfile_name="hello-wordle-sim-log.txt"
     )
 
@@ -688,7 +688,7 @@ def main():
 
 
 if __name__ == "__main__":
-    # Show all available wordlists stats
+    # Show all available word lists stats
     #show_word_stat()
 
     # Show best opening words for all word lengths
