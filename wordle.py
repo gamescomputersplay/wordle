@@ -22,20 +22,20 @@ class WordList:
         self.letter_count = {}
 
         # words' scores: {"apple": 100, "fruit": 200} etc
-        # score is the sum of all letters' frequences
+        # score is the sum of all letters' frequencies
         self.word_scores = {}
 
-        # Same, but scores accont for letter positions
+        # Same, but scores account for letter positions
         self.position_letter_count = [{}, {}, {}, {}, {}]
         self.position_word_scores = {}
 
-        # Gererate the word scores
+        # Generate the word scores
         # (both positional and total)
         self.gen_word_scores()
         self.gen_positional_word_scores()
 
     def copy(self):
-        ''' Copy of existing wordlist
+        ''' Copy of existing word list
         '''
         new_word_list = WordList()
         new_word_list.word_list = self.word_list.copy()
@@ -166,7 +166,7 @@ class Guess:
 
     def __init__(self, guess_word, correct_word):
         self.word = guess_word
-        # Set to True, but will be swithed
+        # Set to True, but will be switched
         self.guessed_correctly = False
         self.result = self.get_result(correct_word)
 
@@ -237,7 +237,7 @@ class Wordle:
     def guess(self, word):
         ''' One turn of the game
         get guessed word, add new Guess in guesses list
-        if guessed correctly, return True, esle False
+        if guessed correctly, return True, else False
         '''
         self.guesses.append(Guess(word, self.correct_word))
         # Return True/False if you got the word right
@@ -262,7 +262,7 @@ class Player:
         
         # which letter has to be in the word, from green and yellow letters
         self.must_use = set()
-        # copy of the global wordset (we'll be removing unfit words from it)
+        # copy of the global word set (we'll be removing unfit words from it)
         self.remaining_words = guessing_words.copy()
 
     def filter_word_list(self):
@@ -291,7 +291,7 @@ class Player:
         # Temp No mask is actual Yes mask
         temp_no_mask = self.yes_mask
 
-        # Prioritise those that are present in all "allowed _mask[1]"
+        # Prioritize those that are present in all "allowed _mask[1]"
         # (meaning they have never been grey) minus all yellow and greens
         greens_n_yellows = set()
         for letters in self.yes_mask + self.no_mask:
@@ -299,21 +299,21 @@ class Player:
                 greens_n_yellows.add(letter)
 
         # Add vowels if needed
-        prority_letters = self.allowed_mask[1].difference(greens_n_yellows)
-        letters_for_allowed_mask = prority_letters
-        if count_vowels(prority_letters) == 0:
-            letters_for_allowed_mask = set.union(prority_letters, set(list("aoe")))
+        priority_letters = self.allowed_mask[1].difference(greens_n_yellows)
+        letters_for_allowed_mask = priority_letters
+        if count_vowels(priority_letters) == 0:
+            letters_for_allowed_mask = set.union(priority_letters, set(list("aoe")))
             
-        # Temp Allowed mask: prority letters and some vowels
+        # Temp Allowed mask: priority letters and some vowels
         # [0] has all letters - any letter can be missed
         temp_allowed_mask = [set("abcdefghijklmnopqurstuvwxyz")] + [
             letters_for_allowed_mask for i in range(3)]
 
-        # Find the word to fit temporary mask, with maximized prioitized letters
+        # Find the word to fit temporary mask, with maximized prioritized letters
         temp_words = guessing_words.copy()
         temp_words.filter_by_mask(temp_yes_mask, temp_no_mask, temp_allowed_mask)
         if len(temp_words) > 0:
-            return temp_words.get_maximized_word(list(prority_letters))
+            return temp_words.get_maximized_word(list(priority_letters))
 
         return ""
 
@@ -329,7 +329,7 @@ class Player:
            len(self.remaining_words) == len(guessing_words):
             return self.remaining_words.get_random_word()
 
-        # list of masks' lenths
+        # list of masks' lengths
         has_greens = 5 - self.yes_mask.count([])
         # Conditions for "re-use green" logic:
         # has Green; more than 2 potential answers
@@ -413,7 +413,7 @@ class Player:
         self.update_allowed_mask(guess)
 
     def update_mask_with_remaining_words(self):
-        ''' Updtae allowed_mask, based on letter freq of remaining words
+        ''' Update allowed_mask, based on letter freq of remaining words
         '''
         # Update allow_mask, knowing letter count of remaining words
         self.remaining_words.gen_letter_count()
