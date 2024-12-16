@@ -7,7 +7,6 @@ uncomment lines 81-82 for that)
 
 import time
 import os.path
-import math
 import hashlib
 import numpy as np
 
@@ -31,9 +30,9 @@ def get_filename(puzzle_words, guessing_words, possible_answers):
     h.update(str(puzzle_words.word_list).encode("utf-8"))
     h.update(str(guessing_words.word_list).encode("utf-8"))
     h.update(str(frozenset(possible_answers.items())).encode("utf-8"))
-    hashstr = h.hexdigest()
-    return f"wordle_matrix_{hashstr[:8]}.npy"
-    
+    hash_str = h.hexdigest()
+    return f"wordle_matrix_{hash_str[:8]}.npy"
+
 
 def get_the_matrix(puzzle_words, guessing_words, possible_answers):
     ''' Load the matrix if saved version exists.
@@ -51,7 +50,7 @@ def get_the_matrix(puzzle_words, guessing_words, possible_answers):
     return matrix
 
 def generate_all_possible_answers():
-    ''' Generate all posible answers. and put them om dictionary
+    ''' Generate all possible answers. and put them om dictionary
     like this: {(0,0,0,0,0): 0 ..., (2,2,2,2,2): 242}
     '''
     out = {}
@@ -102,7 +101,7 @@ def get_top_guesses(word_ns, ignore_ns, guess_words_ns, matrix):
         options = 10
     else:
         options = 20
-        
+
     best_score = [None for _ in range(options)]
     best_n = [None for _ in range(options)]
     for guess_n in guess_words_ns:
@@ -110,7 +109,7 @@ def get_top_guesses(word_ns, ignore_ns, guess_words_ns, matrix):
             continue
         distribution = get_distribution(word_ns, guess_n, matrix)
         score = score_distribution(distribution)
-        
+
         # Find the best one
         for i in range(options):
             if best_n[i] is None or score > best_score[i]:
@@ -138,7 +137,7 @@ def get_valid_results(word_ns, guess_word_n, matrix):
     return out
 
 def result_length(result):
-    ''' Len of this result (sum of the 2nd levels lenths)
+    ''' Len of this result (sum of the 2nd levels lengths)
     '''
     count = 0
     for line in result:
@@ -154,7 +153,7 @@ def add_node(word_ns, guess_words_ns, matrix, previous_guesses):
     best_guesses = get_top_guesses(word_ns, previous_guesses, guess_words_ns, matrix)
     print (f"Best  are: {best_guesses}")
     for i, best_guess in enumerate(best_guesses):
-        
+
         out = []
         #print (f"Attempt {i}. Best word is: {best_guess}")
         answers = get_valid_results(word_ns, best_guess, matrix)
@@ -166,19 +165,19 @@ def add_node(word_ns, guess_words_ns, matrix, previous_guesses):
                 if answer != 242:
                     out[-1].append(best_guess)
                 out[-1].append(new_list[0])
-                
+
             else:
-                #print (f"After asnswer {answer} still a list of " + 
+                #print (f"After answer {answer} still a list of " +
                 #      f"{len(new_list)}")
                 out += add_node(new_list, guess_words_ns, matrix,
                                 tuple(list(previous_guesses) + [best_guess]))
-                
+
         if final_result is None or result_length(out) < result_length(final_result):
             final_result = out
 
     return final_result
 
-def result_to_text(result):
+def result_to_text(result, guessing_words):
     ''' Convert those numbers back to words
     '''
     out = ""
@@ -196,7 +195,7 @@ def result_to_text(result):
 
 
 def main():
-    '''
+    ''' Main method: load words, generate the solution
     '''
 
     puzzle_words = wordle.WordList("words-guess.txt")
@@ -206,13 +205,13 @@ def main():
 
     guess_words_ns = [n for n in range(len(guessing_words))]
     word_ns = [n for n in range(len(puzzle_words))]
-    
+
     prev = ()
 
     result = add_node(word_ns, guess_words_ns, matrix, prev)
     print (result[:10])
-    with open("results.txt", "w") as fs:
-        fs.write(result_to_text(result))
+    with open("results.txt", "w", encoding="utf-8") as fs:
+        fs.write(result_to_text(result, guessing_words))
     print ("Ave:", result_length(result)/2315)
 
 if __name__ == "__main__":
